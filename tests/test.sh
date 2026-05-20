@@ -1,18 +1,37 @@
 #!/usr/bin/env bash
 set -u
 
-# Resolve task root across Harbor and local.
+RUN_DIR="$(pwd -P)"
+
+TASK_ROOT=""
+APP_ROOT=""
+REWARD_FILE=""
+REPORT_SCRIPT=""
+
+# Harbor usually runs the verifier from the editable workdir.
+# Local VS Code also runs from the task root.
 if [ -f "/workspace/instruction.md" ]; then
   TASK_ROOT="/workspace"
+elif [ -f "$RUN_DIR/instruction.md" ]; then
+  TASK_ROOT="$RUN_DIR"
 else
   TASK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-# Application root is always task-root/workspace in this task.
-APP_ROOT="$TASK_ROOT/workspace"
-REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
+if [ -f "$TASK_ROOT/workspace/reporting/build_report.py" ]; then
+  APP_ROOT="$TASK_ROOT/workspace"
+  REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
+elif [ -f "$TASK_ROOT/reporting/build_report.py" ]; then
+  APP_ROOT="$TASK_ROOT"
+  REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
+else
+  APP_ROOT="$TASK_ROOT/workspace"
+  REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
+  echo "Could not locate build_report.py at expected paths."
+  echo "Checked: $TASK_ROOT/workspace/reporting/build_report.py"
+  echo "Checked: $TASK_ROOT/reporting/build_report.py"
+fi
 
-# Harbor may mount tests at /tests. Use them if present, else local tests dir.
 if [ -f "/tests/test_workbook_outputs.py" ]; then
   TEST_ROOT="/tests"
 else
@@ -27,10 +46,22 @@ else
 fi
 
 rm -f "$REWARD_FILE"
-rm -rf "$TASK_ROOT/output"
+rm -rf "$TASK_ROOT/output" "$APP_ROOT/output"
 
-python "$REPORT_SCRIPT" > /tmp/finance_report_stdout.txt 2> /tmp/finance_report_stderr.txt
-build_status=$?
+export TASK_ROOT_FOR_TESTS="$TASK_ROOT"
+
+echo "TASK_ROOT=$TASK_ROOT"
+echo "APP_ROOT=$APP_ROOT"
+echo "TEST_ROOT=$TEST_ROOT"
+
+if [ -f "$REPORT_SCRIPT" ]; then
+  python "$REPORT_SCRIPT" > /tmp/finance_report_stdout.txt 2> /tmp/finance_report_stderr.txt
+  build_status=$?
+else
+  build_status=1
+  echo "Report generation failed before workbook verification."
+  echo "python: can't open file '$REPORT_SCRIPT': [Errno 2] No such file or directory" > /tmp/finance_report_stderr.txt
+fi
 
 if [ "$build_status" -ne 0 ]; then
   echo "Report generation failed before workbook verification."
@@ -47,5 +78,4 @@ else
   echo 0 > "$REWARD_FILE"
 fi
 
-# Must always print pytest output to stdout: satisfied by direct pytest invocation above.
 exit "$test_status"

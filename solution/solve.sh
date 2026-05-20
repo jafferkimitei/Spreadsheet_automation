@@ -1,17 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TASK_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-APP_ROOT="$TASK_ROOT/workspace"
-TARGET="$APP_ROOT/reporting/build_report.py"
+RUN_DIR="$(pwd -P)"
 
-if [ ! -f "$TARGET" ]; then
-  echo "Expected target not found: $TARGET"
+if [ -f "$RUN_DIR/workspace/reporting/build_report.py" ]; then
+  TASK_ROOT="$RUN_DIR"
+  APP_ROOT="$RUN_DIR/workspace"
+elif [ -f "/workspace/workspace/reporting/build_report.py" ]; then
+  TASK_ROOT="/workspace"
+  APP_ROOT="/workspace/workspace"
+elif [ -f "/app/workspace/reporting/build_report.py" ]; then
+  TASK_ROOT="/app"
+  APP_ROOT="/app/workspace"
+else
+  echo "Could not locate workspace/reporting/build_report.py"
+  echo "Current directory: $RUN_DIR"
+  find /workspace /app /tmp -maxdepth 4 -path "*/workspace/reporting/build_report.py" 2>/dev/null || true
   exit 1
 fi
 
+TARGET="$APP_ROOT/reporting/build_report.py"
+
 cat > "$TARGET" <<'PY'
+
 #!/usr/bin/env python3
 
 from pathlib import Path

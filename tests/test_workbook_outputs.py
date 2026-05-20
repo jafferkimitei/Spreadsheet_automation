@@ -1,13 +1,16 @@
 from pathlib import Path
+import os
 
 import openpyxl
 import pytest
 
 
-if Path("/workspace/instruction.md").exists():
-    TASK_ROOT = Path("/workspace")
+env_task_root = os.environ.get("TASK_ROOT_FOR_TESTS")
+if env_task_root:
+    TASK_ROOT = Path(env_task_root).resolve()
 else:
-    TASK_ROOT = Path(__file__).resolve().parents[1]
+    TASK_ROOT = Path.cwd().resolve()
+
 WORKBOOK_PATH = TASK_ROOT / "output" / "finance_report.xlsx"
 
 EXPECTED_SHEETS = {
