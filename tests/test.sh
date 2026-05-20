@@ -18,16 +18,20 @@ else
   TASK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fi
 
-if [ -f "$TASK_ROOT/workspace/reporting/build_report.py" ]; then
+if [ -f "$TASK_ROOT/environment/workspace/reporting/build_report.py" ]; then
+  APP_ROOT="$TASK_ROOT/environment/workspace"
+  REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
+elif [ -f "$TASK_ROOT/workspace/reporting/build_report.py" ]; then
   APP_ROOT="$TASK_ROOT/workspace"
   REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
 elif [ -f "$TASK_ROOT/reporting/build_report.py" ]; then
   APP_ROOT="$TASK_ROOT"
   REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
 else
-  APP_ROOT="$TASK_ROOT/workspace"
+  APP_ROOT="$TASK_ROOT/environment/workspace"
   REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
   echo "Could not locate build_report.py at expected paths."
+  echo "Checked: $TASK_ROOT/environment/workspace/reporting/build_report.py"
   echo "Checked: $TASK_ROOT/workspace/reporting/build_report.py"
   echo "Checked: $TASK_ROOT/reporting/build_report.py"
 fi

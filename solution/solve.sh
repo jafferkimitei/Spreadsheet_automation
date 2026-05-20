@@ -3,9 +3,15 @@ set -euo pipefail
 
 RUN_DIR="$(pwd -P)"
 
-if [ -f "$RUN_DIR/workspace/reporting/build_report.py" ]; then
+if [ -f "$RUN_DIR/environment/workspace/reporting/build_report.py" ]; then
+  TASK_ROOT="$RUN_DIR"
+  APP_ROOT="$RUN_DIR/environment/workspace"
+elif [ -f "$RUN_DIR/workspace/reporting/build_report.py" ]; then
   TASK_ROOT="$RUN_DIR"
   APP_ROOT="$RUN_DIR/workspace"
+elif [ -f "/workspace/environment/workspace/reporting/build_report.py" ]; then
+  TASK_ROOT="/workspace"
+  APP_ROOT="/workspace/environment/workspace"
 elif [ -f "/workspace/workspace/reporting/build_report.py" ]; then
   TASK_ROOT="/workspace"
   APP_ROOT="/workspace/workspace"
@@ -13,9 +19,9 @@ elif [ -f "/app/workspace/reporting/build_report.py" ]; then
   TASK_ROOT="/app"
   APP_ROOT="/app/workspace"
 else
-  echo "Could not locate workspace/reporting/build_report.py"
+  echo "Could not locate build_report.py in expected app roots"
   echo "Current directory: $RUN_DIR"
-  find /workspace /app /tmp -maxdepth 4 -path "*/workspace/reporting/build_report.py" 2>/dev/null || true
+  find /workspace /app /tmp "$RUN_DIR" -maxdepth 6 -path "*/workspace/reporting/build_report.py" 2>/dev/null || true
   exit 1
 fi
 
@@ -33,7 +39,10 @@ from openpyxl.utils import get_column_letter
 
 
 APP_ROOT = Path(__file__).resolve().parents[1]
-TASK_ROOT = APP_ROOT.parent
+if APP_ROOT.name == "workspace" and APP_ROOT.parent.name == "environment":
+    TASK_ROOT = APP_ROOT.parent.parent
+else:
+    TASK_ROOT = APP_ROOT.parent
 DATA_DIR = APP_ROOT / "data"
 OUTPUT_PATH = TASK_ROOT / "output" / "finance_report.xlsx"
 
