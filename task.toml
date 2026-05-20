@@ -1,0 +1,36 @@
+author_name = "JAFFER KIMITEI"
+author_email = "jafferkimitei@gmail.com"
+category = "data-processing"
+tags = ["spreadsheet-automation", "finance-reporting", "python", "excel", "data-cleaning"]
+difficulty = "medium"
+expert_time_estimate_hours = 2
+
+difficulty_explanation = "This task needs to be performed with a realistic finance reporting pipeline that involves multiple interacting challenges: Data cleaning, Country to Region mapping, Transaction filtering, Currency conversion, Aggregation logic, Missing value handling, Workbook generation and Excel formatting. It's not a one-line solution, but the size of the dataset and how the workbook is supposed to look are manageable enough that an experienced engineer can finish the workbook within a single session."
+
+solution_explanation = "The proposed fix adds the capability to load all the source CSV files, create output directory, map countries to World Bank regions, filter out reversed transactions, convert USD values to KES using the exchange-rate table, compute gross profit and margin percentage, compute product and regional summary, average risk metrics without caring about missing values, output the required workbook sheets, and format headers."
+
+verification_explanation = "The verifier then executes the report generator and then uses pytest along with openpyxl to check the Excel workbook generated. It verifies if the workbook is present and if required sheets are present, that the transactions are not reversed, that the regional and product calculation is correct, that the cell value for the risk calculation is correctly converted back to KES, that the cell value for the average is not affected by missing values for the risk, that the validation totals are correct, and that the headers are formatted."
+
+[task]
+name = "finance-reporting-workbook-repair"
+description = "Repair a Python CLI that generates a cleaned, formatted multi-sheet Excel finance reporting workbook from messy CSV exports."
+keywords = ["spreadsheet", "excel", "finance", "python", "data-cleaning"]
+
+[metadata]
+category = "spreadsheet automation / finance operations"
+difficulty_explanation = "Requires repairing several connected data-cleaning, aggregation, workbook-generation, and formatting issues rather than fixing a single syntax error."
+
+[verifier]
+timeout_sec = 120.0
+
+[agent]
+timeout_sec = 600.0
+
+[environment]
+build_timeout_sec = 600.0
+os = "linux"
+cpus = 1
+memory_mb = 2048
+storage_mb = 2048
+gpus = 0
+allow_internet = true

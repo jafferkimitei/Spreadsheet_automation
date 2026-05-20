@@ -1,0 +1,8 @@
+# Keep the Harbor build context clean.
+# The environment build context is environment/, so these are defensive only.
+tests/
+solution/
+output/
+logs/
+__pycache__/
+*.pyc
