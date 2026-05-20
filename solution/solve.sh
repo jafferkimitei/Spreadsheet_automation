@@ -2,25 +2,40 @@
 set -euo pipefail
 
 RUN_DIR="$(pwd -P)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SCRIPT_PARENT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 
-if [ -f "$RUN_DIR/environment/workspace/reporting/build_report.py" ]; then
-  TASK_ROOT="$RUN_DIR"
-  APP_ROOT="$RUN_DIR/environment/workspace"
-elif [ -f "$RUN_DIR/workspace/reporting/build_report.py" ]; then
-  TASK_ROOT="$RUN_DIR"
-  APP_ROOT="$RUN_DIR/workspace"
-elif [ -f "/workspace/environment/workspace/reporting/build_report.py" ]; then
-  TASK_ROOT="/workspace"
-  APP_ROOT="/workspace/environment/workspace"
-elif [ -f "/workspace/workspace/reporting/build_report.py" ]; then
-  TASK_ROOT="/workspace"
-  APP_ROOT="/workspace/workspace"
-elif [ -f "/app/workspace/reporting/build_report.py" ]; then
-  TASK_ROOT="/app"
-  APP_ROOT="/app/workspace"
-else
+# Determine task root from multiple stable candidates.
+TASK_ROOT=""
+APP_ROOT=""
+candidates=("/workspace" "/app" "$RUN_DIR" "$SCRIPT_PARENT")
+for candidate in "${candidates[@]}"; do
+  [ -n "$candidate" ] || continue
+  if [ -f "$candidate/environment/workspace/reporting/build_report.py" ]; then
+    TASK_ROOT="$candidate"
+    APP_ROOT="$candidate/environment/workspace"
+    break
+  elif [ -f "$candidate/workspace/reporting/build_report.py" ]; then
+    TASK_ROOT="$candidate"
+    APP_ROOT="$candidate/workspace"
+    break
+  elif [ -f "$candidate/reporting/build_report.py" ]; then
+    TASK_ROOT="$candidate"
+    APP_ROOT="$candidate"
+    break
+  fi
+done
+
+if [ -z "$APP_ROOT" ]; then
   echo "Could not locate build_report.py in expected app roots"
   echo "Current directory: $RUN_DIR"
+  echo "Script parent: $SCRIPT_PARENT"
+  echo "Probed task-root candidates: ${candidates[*]}"
+  for root in "${candidates[@]}"; do
+    echo "Checked: $root/environment/workspace/reporting/build_report.py"
+    echo "Checked: $root/workspace/reporting/build_report.py"
+    echo "Checked: $root/reporting/build_report.py"
+  done
   find /workspace /app /tmp "$RUN_DIR" -maxdepth 6 -path "*/workspace/reporting/build_report.py" 2>/dev/null || true
   exit 1
 fi

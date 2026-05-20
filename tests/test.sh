@@ -2,20 +2,34 @@
 set -u
 
 RUN_DIR="$(pwd -P)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
+SCRIPT_PARENT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 
 TASK_ROOT=""
 APP_ROOT=""
 REWARD_FILE=""
 REPORT_SCRIPT=""
 
-# Harbor usually runs the verifier from the editable workdir.
-# Local VS Code also runs from the task root.
-if [ -f "/workspace/instruction.md" ]; then
-  TASK_ROOT="/workspace"
-elif [ -f "$RUN_DIR/instruction.md" ]; then
-  TASK_ROOT="$RUN_DIR"
-else
-  TASK_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Determine task root from multiple stable candidates.
+candidates=("/workspace" "/app" "$RUN_DIR" "$SCRIPT_PARENT")
+for candidate in "${candidates[@]}"; do
+  [ -n "$candidate" ] || continue
+  if [ -f "$candidate/environment/workspace/reporting/build_report.py" ] || \
+     [ -f "$candidate/workspace/reporting/build_report.py" ] || \
+     [ -f "$candidate/reporting/build_report.py" ]; then
+    TASK_ROOT="$candidate"
+    break
+  fi
+done
+
+if [ -z "$TASK_ROOT" ]; then
+  if [ "$SCRIPT_PARENT" != "/" ]; then
+    TASK_ROOT="$SCRIPT_PARENT"
+  elif [ "$RUN_DIR" != "/" ]; then
+    TASK_ROOT="$RUN_DIR"
+  else
+    TASK_ROOT="/workspace"
+  fi
 fi
 
 if [ -f "$TASK_ROOT/environment/workspace/reporting/build_report.py" ]; then
@@ -31,6 +45,7 @@ else
   APP_ROOT="$TASK_ROOT/environment/workspace"
   REPORT_SCRIPT="$APP_ROOT/reporting/build_report.py"
   echo "Could not locate build_report.py at expected paths."
+  echo "Probed task-root candidates: ${candidates[*]}"
   echo "Checked: $TASK_ROOT/environment/workspace/reporting/build_report.py"
   echo "Checked: $TASK_ROOT/workspace/reporting/build_report.py"
   echo "Checked: $TASK_ROOT/reporting/build_report.py"
