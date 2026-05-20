@@ -180,6 +180,20 @@ def test_region_and_product_transaction_counts_reconcile_to_clean_rows(workbook)
     assert product_count_total == clean_count
 
 
+def test_summary_revenue_totals_match_validation_checks(workbook):
+    validation_records = sheet_records(workbook["Validation Checks"])
+    validation = {record["check_name"]: float(record["value"]) for record in validation_records}
+
+    region_records = sheet_records(workbook["Regional Summary"])
+    product_records = sheet_records(workbook["Product Summary"])
+
+    region_revenue_total = sum(float(record["revenue_usd"]) for record in region_records)
+    product_revenue_total = sum(float(record["revenue_usd"]) for record in product_records)
+
+    assert_close(region_revenue_total, validation["approved_revenue_usd_total"])
+    assert_close(product_revenue_total, validation["approved_revenue_usd_total"])
+
+
 def test_raw_cleaned_data_transaction_ids_are_unique(workbook):
     records = sheet_records(workbook["Raw Cleaned Data"])
     transaction_ids = [record["transaction_id"] for record in records]
